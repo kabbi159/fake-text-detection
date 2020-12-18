@@ -105,49 +105,6 @@ class EncodedDataset(Dataset):
         return tokens, mask, label
 
 
-
-class BERTEncodedDataset(Dataset): # bert
-    def __init__(self, real_texts: List[str], fake_texts: List[str], tokenizer: PreTrainedTokenizer,
-                 max_sequence_length: int = None, seed: int = None):
-        self.real_texts = real_texts
-        self.fake_texts = fake_texts
-        self.tokenizer = tokenizer
-        self.max_sequence_length = max_sequence_length
-        self.random = np.random.RandomState(seed)
-
-    def __len__(self):
-        return len(self.real_texts) + len(self.fake_texts)
-
-    def __getitem__(self, index):
-        if index < len(self.real_texts):
-            text = self.real_texts[index]
-            label = 1
-        else:
-            text = self.fake_texts[index - len(self.real_texts)]
-            label = 0
-
-        tokens = self.tokenizer.encode(text, add_special_tokens=False)
-
-        if self.max_sequence_length is None:
-            tokens = tokens[:self.tokenizer.model_max_length - 2]
-        else:
-            output_length = min(len(tokens), self.max_sequence_length)
-            start_index = 0 if len(tokens) <= output_length else self.random.randint(0, len(tokens) - output_length + 1)
-            end_index = start_index + output_length
-            tokens = tokens[start_index:end_index]
-
-        if self.max_sequence_length is None or len(tokens) == self.max_sequence_length:
-            mask = torch.ones(len(tokens) + 2)
-            return torch.tensor([self.tokenizer.cls_token_id] + tokens + [self.tokenizer.sep_token_id]), mask, label
-
-        padding = [self.tokenizer.pad_token_id] * (self.max_sequence_length - len(tokens))
-        tokens = torch.tensor([self.tokenizer.cls_token_id] + tokens + [self.tokenizer.sep_token_id] + padding)
-        mask = torch.ones(tokens.shape[0])
-        mask[-len(padding):] = 0
-
-        return tokens, mask, label
-
-
 def load_datasets(args, tokenizer):
 
     download(args.real_dataset, args.fake_dataset, data_dir=args.data_dir)
