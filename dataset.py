@@ -104,6 +104,62 @@ class EncodedDataset(Dataset):
 
         return tokens, mask, label
 
+class GPT2EncodedDataset(Dataset):
+    def __init__(self, real_texts: List[str], fake_texts: List[str], tokenizer: PreTrainedTokenizer,
+                 max_sequence_length: int = None, min_sequence_length: int = None,
+                 token_dropout: float = None, seed: int = None):
+        self.real_texts = real_texts
+        self.fake_texts = fake_texts
+        self.tokenizer = tokenizer
+        self.max_sequence_length = max_sequence_length
+        self.min_sequence_length = min_sequence_length
+        self.token_dropout = token_dropout
+        self.random = np.random.RandomState(seed)
+
+        #Make BOS tensor Separately
+        self.bos_token=torch.tensor(self.tokenizer.encode('<|endoftext|>'))
+
+    def __len__(self):
+        return len(self.real_texts) + len(self.fake_texts)
+
+    def __getitem__(self, index):
+        if index < len(self.real_texts):
+            text = self.real_texts[index]
+            label = 1
+        else:
+            text = self.fake_texts[index - len(self.real_texts)]
+            label = 0
+
+        tokens = self.tokenizer.encode(text)
+        if self.max_sequence_length is None:
+            tokens = tokens[:self.tokenizer.max_len - 2]
+        else:
+            output_length = min(len(tokens), self.max_sequence_length)
+            if self.min_sequence_length:
+                output_length = self.random.randint(min(self.min_sequence_length, len(tokens)), output_length + 1)
+            start_index = 0 if len(tokens) <= output_length else self.random.randint(0, len(tokens) - output_length + 1)
+            end_index = start_index + output_length
+            tokens = tokens[start_index:end_index]
+
+        if self.token_dropout:
+            dropout_mask = self.random.binomial(1, self.token_dropout, len(tokens)).astype(np.bool)
+            tokens = np.array(tokens)
+            tokens[dropout_mask] = self.tokenizer.unk_token_id
+            tokens = tokens.tolist()
+
+        if self.max_sequence_length is None or len(tokens) == self.max_sequence_length:
+            mask = torch.ones(len(tokens)+1)
+            tokens=torch.tensor(tokens)
+            return torch.cat([self.bos_token, tokens], dim=0), mask, label
+
+        padding = [0] * (self.max_sequence_length - len(tokens))
+        tokens = torch.tensor(tokens  + padding)
+        tokens= torch.cat([self.bos_token, tokens], dim=0)
+
+        mask = torch.ones(tokens.shape[0])
+        mask[-len(padding):] = 0
+        return tokens, mask, label
+
 
 def load_datasets(args, tokenizer):
 
