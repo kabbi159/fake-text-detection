@@ -10,15 +10,21 @@ This is a experiment code on WebText and gpt2-output-dataset
 
 ## Token probability-base Classifier
 
-## Usage
+## Baseline Usage
 Before run this code, construct dataset  ```data/webtext.{train,dev,test}.jsonl```, ```data/xl-1542M-{k40,nucleus}.{train,dev,test}.jsonl``` with this format.  
-You can run this code: (수정 예정)
+You can run this code:
 ```bash
-python train.py
---transformer_type=bert \
---model_name=bert-base-cased \
---seed=42 \
---lr=3e-5 \
+python baseline.py
+--max-epochs=2 \
+--batch-size=32 \
+--max-sequence-length=128 \
+--data-dir='data' \
+--real-dataset='webtext' \
+--fake-dataset='xl-1542M-nucleus' \
+--save-dir='logs' \
+--learning-rate=2e-5 \
+--weight-decay=0 \
+--model-name='bert-base-cased' \
 --wandb=True
 ```
 
