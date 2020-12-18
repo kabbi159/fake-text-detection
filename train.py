@@ -2,13 +2,11 @@ from tqdm import tqdm
 from util import accuracy_sum
 import wandb
 
-def train(model, optimizer, train_loader, args):
+def train(model, optimizer, train_loader, args, device):
     model.train()
 
     train_accuracy = 0
     train_epoch_size = 0
-
-    device = args.device
 
     with tqdm(train_loader, desc='Train') as loop:
         for texts, masks, labels in loop:
@@ -32,14 +30,12 @@ def train(model, optimizer, train_loader, args):
         wandb.log({"train_acc": train_accuracy / train_epoch_size})
 
 
-def validation(model, validation_loader, args):
+def validation(model, validation_loader, args, device):
     model.eval()
 
     val_accuracy = 0
     val_epoch_size = 0
     val_loss = 0
-
-    device = args.device
 
     with tqdm(validation_loader, desc='Validation') as loop:
         for texts, masks, labels in loop:
@@ -61,13 +57,11 @@ def validation(model, validation_loader, args):
     return val_accuracy / val_epoch_size
 
 
-def test(model, test_lodaer, args):
+def test(model, test_lodaer, args, device):
     model.eval()
 
     test_accuracy = 0
     test_epoch_size = 0
-
-    device = args.device
 
     with tqdm(test_lodaer, desc='Validation') as loop:
         for texts, masks, labels in loop:
