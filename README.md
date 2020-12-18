@@ -36,4 +36,4 @@ python prob_extract.py
 --max-sequence-length=128 \
 --seed 10 \
 --num-workers 16\
---num-train-pairs 50000\
+--num-train-pairs 50000
